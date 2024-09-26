@@ -7,7 +7,7 @@ const downloadTorrentFile = async (torrentPath: string) => {
     const torrentObject = await parseTorrentFileFromPath(torrentPath);
     if (torrentObject.announce && torrentObject.announce.length > 0) {
         // TODO: multi announce support
-        const announce = torrentObject.announce[2];
+        const announce = torrentObject.announce[3];
         console.log(`Announce URL: ${announce} \n( All announce URLs: \n${torrentObject.announce.map(v => `- ${v}`).join("\n")}\n)\n`);
 
         const protocol = getProtocolFromUrl(announce);

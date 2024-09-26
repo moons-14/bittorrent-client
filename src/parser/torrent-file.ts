@@ -31,12 +31,6 @@ export const infoHash = (torrent: ParseTorrentFile.Instance) => {
     return crypto.createHash('sha1').update(info).digest();
 }
 
-export const infoHashString = (torrent: ParseTorrentFile.Instance) => {
-    const info = toTorrentFile({
-        info: torrent.info
-    });
-    return crypto.createHash('sha1').update(info).digest('hex');
-}
 
 export const torrentSize = (torrent: ParseTorrentFile.Instance) => {
     const size = torrent.info && torrent.info.files ?

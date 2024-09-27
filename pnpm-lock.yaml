@@ -24,6 +24,9 @@ importers:
       '@types/bencode':
         specifier: ^2.0.4
         version: 2.0.4
+      '@types/bignum':
+        specifier: ^0.0.33
+        version: 0.0.33
       '@types/node':
         specifier: ^22.7.2
         version: 22.7.2
@@ -186,6 +189,9 @@ packages:
 
   '@types/bencode@2.0.4':
     resolution: {integrity: sha512-sirDu3HUSG7jZMlhTDvCzSFiPR4lkUYBQA75CoMi6DEf2alFZWJWtHgfjBbb9PachPZhPMB1IlH09deyMNBipQ==}
+
+  '@types/bignum@0.0.33':
+    resolution: {integrity: sha512-fpkKhwCJQjfHLOYiBQBfiPQ/kGqPcgTfRPhTzs4jqHyDHLwZ3w2p82fGbpigSfbL5qRrrIART51Vpx17L7Ndmw==}
 
   '@types/magnet-uri@5.1.5':
     resolution: {integrity: sha512-SbBjlb1KGe38VfjRR+mwqztJd/4skhdKkRbIzPDhTy7IAeEAPZWIVSEkZw00Qr4ZZOGR3/ATJ20WWPBfrKHGdA==}
@@ -383,6 +389,10 @@ snapshots:
       uint8-util: 2.2.5
 
   '@types/bencode@2.0.4':
+    dependencies:
+      '@types/node': 22.7.2
+
+  '@types/bignum@0.0.33':
     dependencies:
       '@types/node': 22.7.2
 

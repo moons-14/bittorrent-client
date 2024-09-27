@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 
-export const genPeerId = (): Buffer => {
+export const genPeerIdBuffer = (): Buffer => {
     let id = crypto.randomBytes(20);
     Buffer.from('-BC0001-').copy(id, 0);
     return id;

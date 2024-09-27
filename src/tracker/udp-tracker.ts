@@ -1,21 +1,24 @@
 import dgram from 'dgram';
 import crypto from 'crypto';
-import { genPeerId } from '../utils/genPeerId';
-import { infoHash, torrentSize } from '../parser/torrent-file';
-import * as ParseTorrentFile from "parse-torrent-file";
+import { genPeerIdBuffer } from '../utils/genPeerId';
+import { TorrentFile } from '../parser/torrent-file';
+import bignum from 'bignum';
+import config from "../../config";
+import { AnnounceResponse } from 'types/tracker';
 
 export class udpTracker {
     public url: URL;
-    public peers: Array<{ ip: string, port: number }> = [];
-    public torrent: ParseTorrentFile.Instance;
+    public torrent: TorrentFile;
     private socket: dgram.Socket;
     private peerId: Buffer;
 
-    constructor(url: string, torrent: ParseTorrentFile.Instance) {
+    public announceResponse?: AnnounceResponse;
+
+    constructor(url: string, torrent: TorrentFile) {
         this.url = new URL(url);
         this.torrent = torrent;
         this.socket = dgram.createSocket('udp4');
-        this.peerId = genPeerId();
+        this.peerId = genPeerIdBuffer();
     }
 
     public getPeers() {
@@ -25,13 +28,24 @@ export class udpTracker {
                 if (this.responseType(msg) === "connect") {
                     const { action, transactionId, connectionId } = this.parseConnectResponse(msg);
                     console.log(`Connection ID: ${connectionId.toString('hex')}`);
+
                     const announceRequest = this.buildAnnounceRequest(connectionId);
                     this.sendConnectRequest(announceRequest);
+
                 } else if (this.responseType(msg) === "announce") {
+                    // Parse the announce response
                     const { action, transactionId, leechers, seeders, peers } = this.parseAnnounceResponse(msg);
-                    this.peers = peers;
+                    console.log(`get peers: (udp, ${this.url})`);
                     console.table(peers);
                     console.log(`Leechers: ${leechers} | Seeders: ${seeders}`);
+
+                    this.announceResponse = {
+                        leechers,
+                        seeders,
+                        peers
+                    };
+
+                    // Close the socket
                     this.socket.close();
                     resolve();
                 }
@@ -60,7 +74,7 @@ export class udpTracker {
         };
     }
 
-    private buildAnnounceRequest(connectionId: Buffer, port: number = 6881) {
+    private buildAnnounceRequest(connectionId: Buffer) {
         const buffer = Buffer.allocUnsafe(98);
 
         // connection id
@@ -70,13 +84,13 @@ export class udpTracker {
         // transaction id
         crypto.randomBytes(4).copy(buffer, 12);
         // info hash
-        infoHash(this.torrent).copy(buffer, 16);
+        this.torrent.infoHash.copy(buffer, 16);
         // peerId
         this.peerId.copy(buffer, 36);
         // downloaded
         Buffer.alloc(8).copy(buffer, 56);
         // left
-        torrentSize(this.torrent).copy(buffer, 64);
+        bignum.toBuffer(this.torrent.size, { size: 8, endian: 'big' }).copy(buffer, 64);
         // uploaded
         Buffer.alloc(8).copy(buffer, 72);
         // event
@@ -88,16 +102,15 @@ export class udpTracker {
         // num want
         buffer.writeInt32BE(-1, 92);
         // port
-        buffer.writeUInt16BE(port, 96);
+        buffer.writeUInt16BE(config.port, 96);
 
         return buffer;
     }
 
     private parseAnnounceResponse(response: Buffer) {
-        function group(iterable, groupSize) {
-            let groups = [];
+        function group(iterable: Buffer, groupSize: number): Buffer[] {
+            let groups: Buffer[] = [];
             for (let i = 0; i < iterable.length; i += groupSize) {
-                //@ts-ignore
                 groups.push(iterable.slice(i, i + groupSize));
             }
             return groups;
@@ -125,7 +138,8 @@ export class udpTracker {
         } else if (action === 1) {
             return "announce";
         } else {
-            throw new Error(`Unknown action ${action}`);
+            // throw new Error(`Unknown action ${action}`);
+            return "unknown";
         }
     }
 }

@@ -1,25 +1,21 @@
-import { parseTorrentFileFromPath } from "./parser/torrent-file";
-import { httpTracker } from "./tracker/http-tracker";
-import { udpTracker } from "./tracker/udp-tracker";
-import { getProtocolFromUrl } from "./utils/getProtocolFromUrl";
+import { decodeTorrentFile, TorrentFile } from "./parser/torrent-file";
+import fs from "fs";
+import { getPeerList } from "tracker/connect";
 
 const downloadTorrentFile = async (torrentPath: string) => {
-    const torrentObject = await parseTorrentFileFromPath(torrentPath);
-    if (torrentObject.announce && torrentObject.announce.length > 0) {
-        // TODO: multi announce support
-        const announce = torrentObject.announce[3];
-        console.log(`Announce URL: ${announce} \n( All announce URLs: \n${torrentObject.announce.map(v => `- ${v}`).join("\n")}\n)\n`);
+    const torrentBuffer = fs.readFileSync(torrentPath);
+    const torrent = new TorrentFile(
+        torrentBuffer,
+        await decodeTorrentFile(torrentBuffer)
+    );
 
-        const protocol = getProtocolFromUrl(announce);
-        console.log(`Announce URL protocol: ${protocol}`);
+    if (torrent.torrent.announce && torrent.torrent.announce.length > 0) {
+        console.log(` All announce URLs: \n${torrent.torrent.announce.map(v => `- ${v}`).join("\n")}`);
 
-        if (protocol === "http:" || protocol === "https:") {
-            const tracker = new httpTracker(announce, torrentObject);
-            await tracker.getPeers();
-        } else if (protocol === "udp:") {
-            const tracker = new udpTracker(announce, torrentObject);
-            await tracker.getPeers();
-        };
+        const peerList = await getPeerList(torrent.torrent.announce, torrent);
+        console.log("Peer list:");
+        console.table(peerList);
+
     } else {
         console.error("No announce URL found in torrent file");
     }

@@ -1,0 +1,14 @@
+{
+    "compilerOptions": {
+        "target": "ESNext",
+        "module": "ESNext",
+        "moduleResolution": "bundler",
+        "strict": true,
+        "baseUrl": "./src",
+    },
+    "include": [
+        "./config.ts",
+        "./config.d.ts",
+        "./src/**/*.ts"
+    ]
+}

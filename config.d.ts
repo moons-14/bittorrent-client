@@ -1,5 +1,5 @@
 export interface Config {
-    defaultTrackers: string[];
-    allowedTrackerProtocols: ("udp:" | "http:" | "https:")[];
-    port: number;
+	defaultTrackers: string[];
+	allowedTrackerProtocols: ("udp:" | "http:" | "https:")[];
+	port: number;
 }

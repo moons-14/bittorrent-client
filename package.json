@@ -1,27 +1,29 @@
 {
-  "name": "bittorrent-client",
-  "version": "0.0.1",
-  "description": "",
-  "type": "module",
-  "main": "src/index.ts",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "tsx src/index.ts"
-  },
-  "keywords": [],
-  "author": "moons-14 <moons@moons14.com>",
-  "license": "MIT",
-  "dependencies": {
-    "bencode": "^4.0.0",
-    "bignum": "^0.13.1",
-    "parse-torrent": "^11.0.17",
-    "tsx": "^4.19.1"
-  },
-  "devDependencies": {
-    "@types/bencode": "^2.0.4",
-    "@types/bignum": "^0.0.33",
-    "@types/node": "^22.7.2",
-    "@types/parse-torrent": "^5.8.7",
-    "@types/parse-torrent-file": "^4.0.6"
-  }
+	"name": "bittorrent-client",
+	"version": "0.0.1",
+	"description": "",
+	"type": "module",
+	"main": "src/index.ts",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"dev": "tsx src/index.ts"
+	},
+	"keywords": [],
+	"author": "moons-14 <moons@moons14.com>",
+	"license": "MIT",
+	"dependencies": {
+		"bencode": "^4.0.0",
+		"bignum": "^0.13.1",
+		"consola": "^3.2.3",
+		"parse-torrent": "^11.0.17",
+		"tsx": "^4.19.1"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "1.9.3",
+		"@types/bencode": "^2.0.4",
+		"@types/bignum": "^0.0.33",
+		"@types/node": "^22.7.2",
+		"@types/parse-torrent": "^5.8.7",
+		"@types/parse-torrent-file": "^4.0.6"
+	}
 }

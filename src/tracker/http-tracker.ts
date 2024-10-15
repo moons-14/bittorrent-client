@@ -1,97 +1,113 @@
 import { genPeerIdString } from "../utils/genPeerId";
 import bencode from "bencode";
 import { hashEncode } from "../utils/hashEncode";
-import { TorrentFile } from "../parser/torrent-file";
+import type { TorrentFile } from "../parser/torrent-file";
 import config from "../../config";
-import { AnnounceResponse, httpTrackerResponse } from "types/tracker";
+import type { AnnounceResponse, httpTrackerResponse } from "types/tracker";
 import { isUint8Array } from "utils/isUint8Array";
+import { consola } from "consola";
 
 export class httpTracker {
-    public url: URL;
-    public torrent: TorrentFile;
-    private peerId: string;
+	public url: URL;
+	public torrent: TorrentFile;
+	private peerId: string;
 
-    public announceResponse?: AnnounceResponse;
+	public announceResponse?: AnnounceResponse;
 
-    constructor(url: string, torrent: TorrentFile) {
-        this.url = new URL(url);
-        this.torrent = torrent;
-        this.peerId = genPeerIdString();
-    }
+	constructor(url: string, torrent: TorrentFile) {
+		this.url = new URL(url);
+		this.torrent = torrent;
+		this.peerId = genPeerIdString();
+	}
 
-    public async getPeers() {
-        const announceUrl = this.buildAnnounceRequestUrl();
-        console.log(`Announce URL: ${announceUrl.toString()}`);
-        const response = await fetch(announceUrl.toString());
-        const responseBuffer = await response.arrayBuffer() as Buffer;
+	public async getPeers() {
+		const announceUrl = this.buildAnnounceRequestUrl();
+		const response = await fetch(announceUrl.toString());
+		const responseBuffer = (await response.arrayBuffer()) as Buffer;
 
-        const { complete, incomplete, interval, minInterval, peers } = this.parseAnnounceResponse(responseBuffer);
-        console.log(`get peers: (http, ${announceUrl})`);
-        console.table(peers);
-        console.log(`Leechers: ${incomplete} | Seeders: ${complete}`);
+		const { complete, incomplete, interval, minInterval, peers } =
+			this.parseAnnounceResponse(responseBuffer);
 
-        this.announceResponse = {
-            leechers: incomplete,
-            seeders: complete,
-            peers
-        };
-    }
+		consola.box(
+			`Announce URL: ${announceUrl}\nLeechers: ${incomplete} | Seeders: ${complete}`,
+			peers
+		);
 
-    private buildAnnounceRequestUrl() {
-        let announceUrl = this.url;
-        announceUrl.searchParams.append("peer_id", this.peerId);
-        announceUrl.searchParams.append("port", config.port.toString());
-        announceUrl.searchParams.append("uploaded", "0");
-        announceUrl.searchParams.append("downloaded", "0");
-        announceUrl.searchParams.append("left", "0");
-        return announceUrl.toString() + "&info_hash=" + hashEncode(this.torrent.infoHash);
-    }
+		this.announceResponse = {
+			leechers: incomplete,
+			seeders: complete,
+			peers,
+		};
+	}
 
-    private parseAnnounceResponse(response: Buffer) {
-        const decodedResponse = bencode.decode(response) as httpTrackerResponse;
-        if (!("complete" in decodedResponse && "incomplete" in decodedResponse && "interval" in decodedResponse && "min interval" in decodedResponse && "peers" in decodedResponse)) {
-            throw new Error("Invalid response");
-        }
+	private buildAnnounceRequestUrl() {
+		const announceUrl = this.url;
+		announceUrl.searchParams.append("peer_id", this.peerId);
+		announceUrl.searchParams.append("port", config.port.toString());
+		announceUrl.searchParams.append("uploaded", "0");
+		announceUrl.searchParams.append("downloaded", "0");
+		announceUrl.searchParams.append("left", "0");
+		return `${announceUrl.toString()}&info_hash=${hashEncode(this.torrent.infoHash)}`;
+	}
 
-        const peers: Array<{ ip: string, port: number, peerId?: string }> = [];
-        if (isUint8Array(decodedResponse.peers)) {
+	private parseAnnounceResponse(response: Buffer) {
+		const decodedResponse = bencode.decode(response) as httpTrackerResponse;
+		if (
+			!(
+				"complete" in decodedResponse &&
+				"incomplete" in decodedResponse &&
+				"interval" in decodedResponse &&
+				"min interval" in decodedResponse &&
+				"peers" in decodedResponse
+			)
+		) {
+			throw new Error("Invalid response");
+		}
 
-            for (let i = 0; i < decodedResponse.peers.length; i += 6) {
-                peers.push({
-                    ip: decodedResponse.peers.slice(i, i + 4).join("."),
-                    port: decodedResponse.peers.slice(i + 4, i + 6).reduce((a, b) => a * 256 + b)
-                });
-            }
-        } else {
-            for (let i = 0; i < decodedResponse.peers.length; i++) {
-                let ip: string;
-                if (isUint8Array(decodedResponse.peers[i].ip)) {
-                    ip = String.fromCharCode(...decodedResponse.peers[i].ip as Uint8Array);
-                } else {
-                    ip = decodedResponse.peers[i].ip as string;
-                }
+		const peers: Array<{ ip: string; port: number; peerId?: string }> = [];
+		if (isUint8Array(decodedResponse.peers)) {
+			for (let i = 0; i < decodedResponse.peers.length; i += 6) {
+				peers.push({
+					ip: decodedResponse.peers.slice(i, i + 4).join("."),
+					port: decodedResponse.peers
+						.slice(i + 4, i + 6)
+						.reduce((a, b) => a * 256 + b),
+				});
+			}
+		} else {
+			for (let i = 0; i < decodedResponse.peers.length; i++) {
+				let ip: string;
+				if (isUint8Array(decodedResponse.peers[i].ip)) {
+					ip = String.fromCharCode(
+						...(decodedResponse.peers[i].ip as Uint8Array),
+					);
+				} else {
+					ip = decodedResponse.peers[i].ip as string;
+				}
 
-                let peerId: string;
-                if (isUint8Array(decodedResponse.peers[i]["peer id"])) {
-                    peerId = String.fromCharCode(...decodedResponse.peers[i]["peer id"] as Uint8Array);
-                } else {
-                    peerId = decodedResponse.peers[i]["peer id"] as string;
-                }
+				let peerId: string;
+				if (isUint8Array(decodedResponse.peers[i]["peer id"])) {
+					peerId = String.fromCharCode(
+						...(decodedResponse.peers[i]["peer id"] as Uint8Array),
+					);
+				} else {
+					peerId = decodedResponse.peers[i]["peer id"] as string;
+				}
 
-                peers.push({
-                    ip,
-                    port: decodedResponse.peers[i].port,
-                    peerId
-                });
-            }
-        }
+				peers.push({
+					ip,
+					port: decodedResponse.peers[i].port,
+					peerId,
+				});
+			}
+		}
 
-        return {
-            complete: decodedResponse.complete,
-            incomplete: decodedResponse.incomplete,
-            interval: decodedResponse.interval,
-            minInterval: decodedResponse["min interval"],
-            peers
-        }
-    }
+		return {
+			complete: decodedResponse.complete,
+			incomplete: decodedResponse.incomplete,
+			interval: decodedResponse.interval,
+			minInterval: decodedResponse["min interval"],
+			peers,
+		};
+	}
 }

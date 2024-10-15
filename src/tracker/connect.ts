@@ -2,49 +2,68 @@ import { getProtocolFromUrl } from "utils/getProtocolFromUrl";
 import { httpTracker } from "./http-tracker";
 import { udpTracker } from "./udp-tracker";
 import config from "../../config";
-import { TorrentFile } from "parser/torrent-file";
-import { AnnounceResponse } from "types/tracker";
+import type { TorrentFile } from "parser/torrent-file";
+import type { AnnounceResponse } from "types/tracker";
+import consola from "consola";
+
+export const getUseTrackerList = (trackers: string[]) => {
+	const allTrackers = trackers.concat(config.defaultTrackers);
+
+	const useTrackers: string[] = [];
+	for (const tracker of allTrackers) {
+		try {
+			const protocol = getProtocolFromUrl(tracker);
+
+			if (config.allowedTrackerProtocols.includes(protocol)) {
+				useTrackers.push(tracker);
+			}
+		} catch (e) {}
+	}
+
+	return useTrackers;
+};
+
 
 const getPeers = async (announce: string, torrent: TorrentFile) => {
-    try {
-        // const announce = torrent.torrent.announce[1];
-        console.log(`Announce URL: ${announce}`);
+	try {
+		const protocol = getProtocolFromUrl(announce);
 
-        const protocol = getProtocolFromUrl(announce);
-        console.log(`Announce URL protocol: ${protocol}`);
-
-        if (!config.allowedTrackerProtocols.includes(protocol)) {
-            console.error("Tracker protocol not allowed");
-            return;
-        }
-
-        if (protocol === "http:") {
-            const tracker = new httpTracker(announce, torrent);
-            await tracker.getPeers();
-            return tracker.announceResponse;
-        } else if (protocol === "udp:") {
-            const tracker = new udpTracker(announce, torrent);
-            await tracker.getPeers();
-            return tracker.announceResponse;
-        };
-    } catch (e) {
-        console.error(`Error connecting to tracker: ${announce}`);
-        // console.error(e);
-        return null;
-    }
-}
+		if (protocol === "http:") {
+			const tracker = new httpTracker(announce, torrent);
+			await tracker.getPeers();
+			return tracker.announceResponse;
+		}
+		if (protocol === "udp:") {
+			const tracker = new udpTracker(announce, torrent);
+			await tracker.getPeers();
+			return tracker.announceResponse;
+		}
+		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+	} catch (e: any) {
+		consola.error(`Error connecting to tracker: ${announce}`, e.message);
+		return null;
+	}
+};
 
 export const getPeerList = async (trackers: string[], torrent: TorrentFile) => {
 
-    const useTrackers = trackers.concat(config.defaultTrackers);
+	const peerList = (
+		await Promise.all(trackers.map((tracker) => getPeers(tracker, torrent)))
+	).filter((peer) => !!peer) as AnnounceResponse[];
 
-    const peerList = (await Promise.all(useTrackers.map(tracker => getPeers(tracker, torrent)))).filter(peer => peer !== null) as AnnounceResponse[];
-    // ipとポートが重複しているpeerを削除
-    const uniquePeers = peerList.reduce((acc, cur) => {
-        return acc.concat(cur.peers);
-    }, [] as AnnounceResponse["peers"]).filter((peer, index, self) => {
-        return index === self.findIndex(p => p.ip === peer.ip && p.port === peer.port);
-    });
+	const uniquePeers = peerList
+		.reduce(
+			(acc, cur) => {
+				return acc.concat(cur.peers);
+			},
+			[] as AnnounceResponse["peers"],
+		)
+		.filter((peer, index, self) => {
+			return (
+				index ===
+				self.findIndex((p) => p.ip === peer.ip && p.port === peer.port)
+			);
+		});
 
-    return uniquePeers;
-}
+	return uniquePeers;
+};

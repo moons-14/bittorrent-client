@@ -25,6 +25,12 @@ export class udpTracker {
 	public getPeers() {
 		return new Promise<void>((resolve, reject) => {
 			this.sendConnectRequest(this.buildConnectRequest());
+
+			// Set a timeout for the response
+			setTimeout(() => {
+				reject(new Error("Timeout"));
+			}, 5000);
+
 			this.socket.on("message", (msg) => {
 				if (this.responseType(msg) === "connect") {
 					const { action, transactionId, connectionId } =
@@ -50,14 +56,16 @@ export class udpTracker {
 					};
 
 					// Close the socket
-					// this.socket.close();
-					// resolve();
+					this.socket.close();
+					resolve();
+				} else {
+					console.log("Unknown response type");
 				}
 			});
 		});
 	}
 
-	private sendConnectRequest(message: Buffer, callback: () => void = () => {}) {
+	private sendConnectRequest(message: Buffer, callback: () => void = () => { }) {
 		this.socket.send(
 			message,
 			Number(this.url.port),
@@ -85,6 +93,7 @@ export class udpTracker {
 
 	private buildAnnounceRequest(connectionId: Buffer) {
 		const buffer = Buffer.allocUnsafe(98);
+		console.log(this.torrent.infoHash.toString("hex"));
 
 		// connection id
 		connectionId.copy(buffer, 0);

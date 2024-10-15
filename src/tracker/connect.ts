@@ -17,7 +17,7 @@ export const getUseTrackerList = (trackers: string[]) => {
 			if (config.allowedTrackerProtocols.includes(protocol)) {
 				useTrackers.push(tracker);
 			}
-		} catch (e) {}
+		} catch (e) { }
 	}
 
 	return useTrackers;
@@ -41,6 +41,7 @@ const getPeers = async (announce: string, torrent: TorrentFile) => {
 		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	} catch (e: any) {
 		consola.error(`Error connecting to tracker: ${announce}`, e.message);
+		// consola.error(e);
 		return null;
 	}
 };
@@ -50,7 +51,7 @@ export const getPeerList = async (trackers: string[], torrent: TorrentFile) => {
 	const peerList = (
 		await Promise.all(trackers.map((tracker) => getPeers(tracker, torrent)))
 	).filter((peer) => !!peer) as AnnounceResponse[];
-
+	
 	const uniquePeers = peerList
 		.reduce(
 			(acc, cur) => {

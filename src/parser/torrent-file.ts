@@ -2,10 +2,11 @@ import parseTorrent, { toTorrentFile } from "parse-torrent";
 import type * as ParseTorrentFile from "parse-torrent-file";
 import crypto from "node:crypto";
 import { getPeerList, getUseTrackerList } from "tracker/connect";
+import bencode from "bencode";
 
 export class TorrentFile {
 	constructor(
-		public _benecode: Buffer,
+		public _bencode: Buffer,
 		public torrent: ParseTorrentFile.Instance,
 	) {}
 
@@ -19,9 +20,7 @@ export class TorrentFile {
 	}
 
 	get infoHash() {
-		const info = toTorrentFile({
-			info: this.torrent.info,
-		});
+		const info = bencode.encode(this.torrent.info);
 		return crypto.createHash("sha1").update(info).digest();
 	}
 

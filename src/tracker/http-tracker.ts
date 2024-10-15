@@ -1,11 +1,11 @@
 import { genPeerIdString } from "../utils/genPeerId";
 import bencode from "bencode";
-import { hashEncode } from "../utils/hashEncode";
 import type { TorrentFile } from "../parser/torrent-file";
 import config from "../../config";
 import type { AnnounceResponse, httpTrackerResponse } from "types/tracker";
 import { isUint8Array } from "utils/isUint8Array";
 import { consola } from "consola";
+import { urlEncodeBytes } from "utils/bufferEncode";
 
 export class httpTracker {
 	public url: URL;
@@ -22,14 +22,18 @@ export class httpTracker {
 
 	public async getPeers() {
 		const announceUrl = this.buildAnnounceRequestUrl();
-		const response = await fetch(announceUrl.toString());
+		console.log(announceUrl);
+		const response = await fetch(announceUrl, { signal: AbortSignal.timeout(5000) });
+		if (!response.ok) {
+			throw new Error("Invalid response");
+		}
 		const responseBuffer = (await response.arrayBuffer()) as Buffer;
 
 		const { complete, incomplete, interval, minInterval, peers } =
 			this.parseAnnounceResponse(responseBuffer);
 
 		consola.box(
-			`Announce URL: ${announceUrl}\nLeechers: ${incomplete} | Seeders: ${complete}`,
+			`Announce URL: ${announceUrl.toString()}\nLeechers: ${incomplete} | Seeders: ${complete}`,
 			peers
 		);
 
@@ -47,11 +51,12 @@ export class httpTracker {
 		announceUrl.searchParams.append("uploaded", "0");
 		announceUrl.searchParams.append("downloaded", "0");
 		announceUrl.searchParams.append("left", "0");
-		return `${announceUrl.toString()}&info_hash=${hashEncode(this.torrent.infoHash)}`;
+		return `${announceUrl.toString()}&info_hash=${urlEncodeBytes(this.torrent.infoHash)}`;
 	}
 
 	private parseAnnounceResponse(response: Buffer) {
 		const decodedResponse = bencode.decode(response) as httpTrackerResponse;
+
 		if (
 			!(
 				"complete" in decodedResponse &&

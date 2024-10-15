@@ -9,7 +9,7 @@ const downloadTorrentFile = async (torrentPath: string) => {
 	);
 
 	console.log(
-		` All announce URLs: \n${torrent.announceList.map((v) => `- ${v}`).join("\n")}`,
+		`All announce URLs: \n${torrent.announceList.map((v) => `- ${v}`).join("\n")}`,
 	);
 	
 	const peerList = await torrent.peerList;

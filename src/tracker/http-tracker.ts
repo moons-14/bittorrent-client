@@ -23,7 +23,9 @@ export class httpTracker {
 	public async getPeers() {
 		const announceUrl = this.buildAnnounceRequestUrl();
 		console.log(announceUrl);
-		const response = await fetch(announceUrl, { signal: AbortSignal.timeout(5000) });
+		const response = await fetch(announceUrl, {
+			signal: AbortSignal.timeout(5000),
+		});
 		if (!response.ok) {
 			throw new Error("Invalid response");
 		}
@@ -34,7 +36,7 @@ export class httpTracker {
 
 		consola.box(
 			`Announce URL: ${announceUrl.toString()}\nLeechers: ${incomplete} | Seeders: ${complete}`,
-			peers
+			peers,
 		);
 
 		this.announceResponse = {

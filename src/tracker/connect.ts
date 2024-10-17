@@ -17,12 +17,11 @@ export const getUseTrackerList = (trackers: string[]) => {
 			if (config.allowedTrackerProtocols.includes(protocol)) {
 				useTrackers.push(tracker);
 			}
-		} catch (e) { }
+		} catch (e) {}
 	}
 
 	return useTrackers;
 };
-
 
 const getPeers = async (announce: string, torrent: TorrentFile) => {
 	try {
@@ -47,11 +46,10 @@ const getPeers = async (announce: string, torrent: TorrentFile) => {
 };
 
 export const getPeerList = async (trackers: string[], torrent: TorrentFile) => {
-
 	const peerList = (
 		await Promise.all(trackers.map((tracker) => getPeers(tracker, torrent)))
 	).filter((peer) => !!peer) as AnnounceResponse[];
-	
+
 	const uniquePeers = peerList
 		.reduce(
 			(acc, cur) => {

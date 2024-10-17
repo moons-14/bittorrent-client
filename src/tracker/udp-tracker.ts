@@ -65,7 +65,7 @@ export class udpTracker {
 		});
 	}
 
-	private sendConnectRequest(message: Buffer, callback: () => void = () => { }) {
+	private sendConnectRequest(message: Buffer, callback: () => void = () => {}) {
 		this.socket.send(
 			message,
 			Number(this.url.port),
